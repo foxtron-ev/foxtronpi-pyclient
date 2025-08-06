@@ -15,8 +15,8 @@ log = logging.getLogger(__name__)
 # Example usage:
 #   export DOIP_SERVER_IP="192.168.1.11"
 #   export ECU_LOGICAL_ADDRESS="4096"
-ECU_IP_ADDRESS = os.environ.get("DOIP_SERVER_IP", "192.168.1.10")
-ECU_LOGICAL_ADDRESS = int(os.environ.get("ECU_LOGICAL_ADDRESS", "0x1000"), 0)
+ECU_IP_ADDRESS = os.environ.get("DOIP_SERVER_IP", "192.168.200.1")
+ECU_LOGICAL_ADDRESS = int(os.environ.get("ECU_LOGICAL_ADDRESS", "0x0680"), 0)
 CLIENT_LOGICAL_ADDRESS = int(os.environ.get("CLIENT_LOGICAL_ADDRESS", "0x0E00"), 0)
 
 
