@@ -20,6 +20,31 @@ ECU_LOGICAL_ADDRESS = int(os.environ.get("ECU_LOGICAL_ADDRESS", "0x1000"), 0)
 CLIENT_LOGICAL_ADDRESS = int(os.environ.get("CLIENT_LOGICAL_ADDRESS", "0x0E00"), 0)
 
 
+def foxtron_security_algo(level, seed, params=None):
+    """
+    Security algorithm for FoxtronPI.
+    This function is called by udsoncan to generate a key from a seed.
+    """
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
+
+    backend = default_backend()
+
+    keys = {
+        1: bytes.fromhex("A8AB5F37723AF4D22BBC7F47D80F8E39"),
+        3: bytes.fromhex("8DA76FA39411624E448D2403F8F34ED5"),
+        5: bytes.fromhex("74EDB045DCBBCF1FE553B53BCF464691"),
+    }
+
+    if level not in keys:
+        raise ValueError(f"Unsupported security level: {level}")
+
+    cipher = Cipher(algorithms.AES(keys[level]), modes.ECB(), backend=backend)
+    encryptor = cipher.encryptor()
+    key = encryptor.update(seed) + encryptor.finalize()
+    return key
+
+
 @contextmanager
 def get_uds_client() -> Iterator[UdsClient]:
     """
@@ -28,6 +53,7 @@ def get_uds_client() -> Iterator[UdsClient]:
     """
     # Set udsoncan to not validate the length of DID data, as it can be variable.
     config["data_size_check"] = False
+    config["security_algo"] = foxtron_security_algo
 
     log.info(f"Connecting to ECU at {ECU_IP_ADDRESS} (logical address: {ECU_LOGICAL_ADDRESS:#04x})...")
     try:
