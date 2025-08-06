@@ -54,6 +54,17 @@ def get_uds_client() -> Iterator[UdsClient]:
     # Set udsoncan to not validate the length of DID data, as it can be variable.
     config["data_size_check"] = False
     config["security_algo"] = foxtron_security_algo
+    config["data_identifiers"] = {
+        0x0E04: "16s",  # FD system time YYYYmmddTHHMMSSZ,  16 bytes
+        0xF090: "22s",  # FVT VIN
+        0xF16F: "10s",  # CAN message map vesrion
+        0xF181: "10s",  # Partition number
+        0xF184: "10s",  # Application software fingerprint
+        0xF187: "10s",  # Spare part number
+        0xF190: "17s",  # VIN code
+        0xF193: "10s",  # HW version
+        0xF195: "10s",  # SW version
+    }
 
     log.info(f"Connecting to ECU at {ECU_IP_ADDRESS} (logical address: {ECU_LOGICAL_ADDRESS:#04x})...")
     try:
