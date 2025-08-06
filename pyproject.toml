@@ -13,14 +13,16 @@ readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
 ]
-license = { file = "LICENSE.txt" }
+license = { file = "LICENSE" }
 dependencies = [
-    "python-doipclient",
-    "python-udsoncan",
+    "doipclient",
+    "udsoncan",
 ]
+
+[tool.setuptools]
+py-modules = ["common", "control_lamp_example", "read_motion_status_example"]
 
 [tool.foxtronpi-pyclient]
 # Configuration for the FoxtronPI client application.
