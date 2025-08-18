@@ -1,4 +1,4 @@
-# foxtronpi-pyclient
+# Foxtronpi-pyclient
 
 This is an example python project to control the FoxtronEV's car model FoxtronPi(D31x) under project FoxtronPI with python-doipclient and python-udsoncan.
 
@@ -13,7 +13,7 @@ This is an example python project to control the FoxtronEV's car model FoxtronPi
 
 ---
 
-## 🛠 Recommendation — Insatll WSL before development
+## <img src="https://img.icons8.com/color/48/windows-10.png" width="24"/> <img src="https://img.icons8.com/color/48/linux.png" width="24"/> Recommendation — Insatll WSL before development 
 When working in a Windows environment, we recommend installing WSL first, as it will make subsequent Python development more convenient.
 
 ### 1. Install WSL+ubuntu-22.04
@@ -44,7 +44,7 @@ Open the CMD and type in the `wsl` command.
 wsl
 ```
 
-## 🐍 Create the Python Virtual Environment
+## <img src="https://img.icons8.com/color/30/python.png" width="28"/> Create the Python Virtual Environment 
 ### Why do we need to create a Python Virtual Environment? 
 A Python Virtual Environment helps isolate dependencies and prevents the global development environment from becoming messy when working on multiple projects.
 
@@ -54,7 +54,7 @@ sudo apt update
 sudo apt install python3 python3-venv python3-pip
 ```
 
-## 🚀 Installation and setup the system requirements packages
+##  <img src="https://img.icons8.com/fluency/28/maintenance.png" width="24"/> Installation and setup the system requirements packages
 ### 1. Clone the repository
 First,Open the CMD and type in the `wsl`.
 
@@ -83,7 +83,7 @@ source Pi/bin/activate
 pip install .
 ```
 
-## 🧪 Execution Method
+## <img src="https://img.icons8.com/fluency/28/console.png" width="22"/> Execution Method 
 
 ### Read the status of vehicle signals
 ```bash
