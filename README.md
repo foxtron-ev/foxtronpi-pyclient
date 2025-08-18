@@ -95,7 +95,7 @@ python3 FoxPi_read.py
 python3 FoxPi_write.py
 ```
 
-## Visual Studio Code development environment
+## 💻Visual Studio Code development environment
 Open VS code to develop Python code if you want, but make sure you are inside the `foxtronpi-pyclient` folder.
 ```bash
 code .
