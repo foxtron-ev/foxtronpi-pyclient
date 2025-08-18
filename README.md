@@ -82,6 +82,10 @@ source Pi/bin/activate
 ```bash
 pip install .
 ```
+### 6. Install cryptography
+```bash
+pip install cryptography
+```
 
 ## <img src="https://img.icons8.com/fluency/28/console.png" width="22"/> Execution Method 
 
