@@ -14,28 +14,26 @@ def foxtron_security_algo(level, seed, params=None):
     backend = default_backend()
 
     keys = {
-        1: bytes.fromhex("A8AB5F37723AF4D22BBC7F47D80F8E39"),
-        3: bytes.fromhex("8DA76FA39411624E448D2403F8F34ED5"),
-        5: bytes.fromhex("74EDB045DCBBCF1FE553B53BCF464691"),
+        1: bytes.fromhex("A8AB5F37723AF4D22BBC7F47D80F8E39"), #foxtronPi security key 1
+        3: bytes.fromhex("8DA76FA39411624E448D2403F8F34ED5"), #foxtronPi security key 5
+        5: bytes.fromhex("74EDB045DCBBCF1FE553B53BCF464691"), #foxtronPi security key 5
     }
 
     if level not in keys:
         raise ValueError(f"Unsupported security level: {level}")
 
-    cipher = Cipher(algorithms.AES(keys[level]), modes.ECB(), backend=backend)
-    encryptor = cipher.decryptor()
-    key = encryptor.update(seed) + encryptor.finalize()
+    cipher = Cipher(algorithms.AES(keys[level]), modes.ECB(), backend=backend) # Create an AES-128 ECB mode Cipher object using the corresponding level’s key.
+    decryptor = cipher.decryptor() #Create a decryptor for decryption
+    key = decryptor.update(seed) + decryptor.finalize() #Feed the seed data into the decryptor to perform AES-ECB decryption and obtain the resulting key.
     return key
 
 
 def get_uds_client() -> dict[str, Any]:
-    """
-    A context manager for establishing a DoIP/UDS connection and yielding a client.
-    Handles connection setup, teardown, and basic connection errors.
-    """
+    
+
     # Set udsoncan to not validate the length of DID data, as it can be variable.
-    #config["data_size_check"] = False
-    config["security_algo"] = foxtron_security_algo
+    
+    config["security_algo"] = foxtron_security_algo #security_algo use the foxtron_security_algo function
     config["data_identifiers"] = {
         0x0E04: "16s",  # FD system time YYYYmmddTHHMMSSZ,  16 bytes
         0xF090: "22s",  # FVT VIN
@@ -47,7 +45,7 @@ def get_uds_client() -> dict[str, Any]:
         0xF193: "10s",  # HW version
         0xF195: "10s",  # SW version
 
-        #FoxPi
+        #FoxPi, s=byte
         0x1001: "21s", # FoxPi_Driving_Ctrl
         0x1002: "13s", # FoxPi_Motion_Status
         0x1003: "13s", # FoxPi_Brake_Status

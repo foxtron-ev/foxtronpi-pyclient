@@ -12,29 +12,34 @@ import os
 
 class FoxPiReadDID:
       
-    def __init__(self, client):
+    def __init__(self, client): # Initialization function; pass in the client parameter, which is the UDS communication object.
         self.client = client
 
-    def debug_print(self, msg):
+    def debug_print(self, msg): #Print the current time (in blue) and the message
         print(f"\033[34m{datetime.datetime.now()}\033[0m: {msg}")
 
-    def bits_to_int(self, bits):
+    def bits_to_int(self, bits): #convert a list of bits to an integer
         return int(''.join(map(str, bits)), 2)
 
-    def bytes_to_int(self, byte):
+    def bytes_to_int(self, byte): #convert a byte to an integer
         return int(byte.hex(), 16)
     
-    def FF(self,value,FF_check):
+    def FF(self,value,FF_check): #check value == FF
         return "FF" if FF_check else value
 
-    def read(self, did, name):
+    def read(self, did, name): #call the read_data_by_identifier functiion to Read DID and return the response data
         response = self.client.read_data_by_identifier(did)
         self.debug_print(f"\033[33m{name}\033[0m: {hex(did)}: {response.service_data.values[did]}")
-        return response.service_data.values[did][0]
+        return response.service_data.values[did][0] #Return DID byte data
 
-    def FoxPi_Driving_Ctrl(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Driving_Ctrl(self) -> Dict[str, Union[int, float, str]]: #Define FoxPi_Driving_Ctrl to read DID 0x1001 and decode the response byte data into a dict
         
-        byte_data =self.read(0x1001,"FoxPi_Driving_Ctrl")
+        byte_data =self.read(0x1001,"FoxPi_Driving_Ctrl") #read DID
+
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw[x] * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
+
 
         AccReq = self.bytes_to_int(byte_data[:3])*0.05-15 #3s,*Factor-offset
         AccReq_A = byte_data[3] #1S
@@ -79,8 +84,9 @@ class FoxPiReadDID:
         #print(f"APSShiftPosnReq_enum: {APSShiftPosnReq_enum} -> {APSShiftPosnReq}")
         print("APS_SpeedCMD: \033[91mFF\033[0m km/h" if byte_data[20]==255 else f"APS_SpeedCMD: {APS_SpeedCMD}")
         
-        FF= "\033[91mFF\033[0m"
+        FF= "\033[91mFF\033[0m" 
 
+         # FF mechanism: if the value is FF, output 'FF' directly
         return {
             "AccReq": FF if all(b==255 for b in byte_data[:3]) else AccReq,
             "AccReq_A": FF if AccReq_A==255 else AccReq_A,
@@ -98,9 +104,13 @@ class FoxPiReadDID:
             "APS_SpeedCMD": FF if byte_data[20]==255 else APS_SpeedCMD
             }
 
-    def FoxPi_Motion_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Motion_Status(self) -> Dict[str, Union[int, float, str]]: #Define FoxPi_Motion_Status to read DID 0x1002 and decode the response byte data into a dict
 
-        byte_data =self.read(0x1002,"FoxPi_Motion_Status")
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
+
+        byte_data =self.read(0x1002,"FoxPi_Motion_Status") #Read DID
         VehicleSpeed = self.bytes_to_int(byte_data[0:3])*0.125 #3s,*Factor
         LongAccel = self.bytes_to_int(byte_data[3:5])*0.01-1.27 #2s*Factor-offset
         LongAccel_V = byte_data[5]#1S
@@ -127,9 +137,14 @@ class FoxPiReadDID:
             "YawRate_V": YawRate_V
         }
 
-    def FoxPi_Brake_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Brake_Status(self) -> Dict[str, Union[int, float, str]]: #Define FoxPi_Brake_Status to read DID 0x1002 and decode the response byte data into a dict
 
-        byte_data =self.read(0x1003,"FoxPi_Brake_Status")
+        byte_data =self.read(0x1003,"FoxPi_Brake_Status") #read DID
+
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
+
         BrkSw_Sta = byte_data[0] #1s
         BrkSw_V = byte_data[1] #1s
         MCPressure_raw = self.bytes_to_int(byte_data[2:5])*0.1-9.7
@@ -146,7 +161,7 @@ class FoxPiReadDID:
 
         print(f"BrkSw_Sta: {BrkSw_Sta}")
         print(f"BrkSw_V: {BrkSw_V}")
-        print(f"MCPressure: {MCPressure} Bar")#decimal quantization to 1 decimal place, rounding down
+        print(f"MCPressure: {MCPressure} Bar") 
         print(f"MCPressure_V: {MCPressure_V}")
         print(f"PBA_Active: {PBA_Active}")
         print(f"PBA_Failed: {PBA_Failed}")
@@ -170,9 +185,14 @@ class FoxPiReadDID:
             "ACC_Availiability": ACC_Availiability
         }
 
-    def FoxPi_WheelSpeed(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_WheelSpeed(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_WheelSpeed to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data =self.read(0x1004,"FoxPi_Brake_Status")
+
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
+
         RR_RawwhlSpeed = self.bytes_to_int(byte_data[:3])*0.0625
         RR_RawwhlSpeed_V = byte_data[3] #1S
         LR_RawwhlSpeed = self.bytes_to_int(byte_data[4:7])*0.0625
@@ -203,9 +223,13 @@ class FoxPiReadDID:
             "LF_RawwhlSpeed_V": LF_RawwhlSpeed_V
         }
 
-    def FoxPi_EPS_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_EPS_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_EPS_Status to read DID 0x1002 and decode the response byte data into a dict
         
         byte_data =self.read(0x1005,"FoxPi_EPS_Status")
+
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
 
         SAS_Angle = self.bytes_to_int(byte_data[:4])*0.1-900
         SAS_V = byte_data[4]
@@ -237,10 +261,12 @@ class FoxPiReadDID:
             "EPS_TOI_Fault": EPS_TOI_Fault
         }
 
-    def FoxPi_Button_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Button_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Button_Status to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x1006, "FoxPi_Button_Status")
 
+        #Get the raw signal value from the response byte array.
+        
         SWC1 = bin(byte_data[0])[2:].zfill(8)
         SWC2 = bin(byte_data[1])[2:].zfill(8)
         SWC1_bit = [int(bit) for bit in SWC1]
@@ -282,9 +308,11 @@ class FoxPiReadDID:
             "SWC_Trip_Sta": SWC2_bit[0]
         }
 
-    def FoxPi_USS_Distance(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_USS_Distance(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_USS_Distance to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x1007, "FoxPi_USS_Distance")
+
+        #Get the raw signal value from the response byte array.
 
         PAS_A1 = [int(bit) for bit in bin(byte_data[0])[2:].zfill(8)]
         PAS_A2 = [int(bit) for bit in bin(byte_data[1])[2:].zfill(8)]
@@ -368,9 +396,11 @@ class FoxPiReadDID:
             "PAS_Sta_F_Sys": PAS_Sta_F_Sys
         }
 
-    def FoxPi_USS_Fault_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_USS_Fault_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_USS_Fault_Status to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x1008, "FoxPi_USS_Fault_Status")
+
+        #Get the raw signal value from the response byte array.
 
         USS_bit1 = [int(bit) for bit in bin(byte_data[0])[2:].zfill(8)]
         USS_bit2 = [int(bit) for bit in bin(byte_data[1])[2:].zfill(8)]
@@ -403,18 +433,20 @@ class FoxPiReadDID:
             "USS_Sta_FLL": USS_bit2[4]
         }
 
-    def FoxPi_PTG_USS_SW(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_PTG_USS_SW(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_PTG_USS_SW to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x1009, "FoxPi_PTG_USS_SW")
+        #Get the raw signal value from the response byte array.
         print(f"PTG_USS_SW_Sta: {byte_data[0]}") #1s
 
         return {
             "PTG_USS_SW_Sta": byte_data[0]
         }
 
-    def FoxPi_Switch_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Switch_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Switch_Status to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x100A, "FoxPi_Switch_Status")
+        #Get the raw signal value from the response byte array.
 
         switch_bit1 = [int(bit) for bit in bin(byte_data[0])[2:].zfill(8)]
         switch_bit2 = [int(bit) for bit in bin(byte_data[1])[2:].zfill(8)]
@@ -441,12 +473,13 @@ class FoxPiReadDID:
             "Hood_Switch_Status": switch_bit2[7]
         }
 
-    def FoxPi_Lamp_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Lamp_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Lamp_Status to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x100B, "FoxPi_Lamp_Status")
 
+        #Get the raw signal value from the response byte array.
+
         lamp_bit1 = [int(bit) for bit in bin(byte_data[0])[2:].zfill(8)]
-        #lamp_bit1 =[1, 0, 1, 0, 1, 0, 1, 0] # For testing purposes
         lamp_bit2 = [int(bit) for bit in bin(byte_data[1])[2:].zfill(8)]
         Column_Turn_lamp_sta = self.bits_to_int(lamp_bit1[6:8]) #2bit
 
@@ -480,9 +513,11 @@ class FoxPiReadDID:
             "Rear_Fog_Lamp_Status": lamp_bit2[2]
         }
 
-    def FoxPi_Lamp_Ctrl(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Lamp_Ctrl(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Lamp_Ctrl to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x100C, "FoxPi_Lamp_Ctrl")
+
+        #Get the raw signal value from the response byte array.
 
         Lamp_ctrl_bit1 = [int(bit) for bit in bin(byte_data[0])[2:].zfill(8)]
         Lamp_ctrl_bit2 = [int(bit) for bit in bin(byte_data[1])[2:].zfill(8)]
@@ -554,9 +589,13 @@ class FoxPiReadDID:
             "Mode": FF if Mode == 255 else Mode
         }
 
-    def FoxPi_Battery_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Battery_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Battery_Status to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x100D, "FoxPi_Battery_Status")
+        
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
 
         LVBattDet12V = byte_data[0]*0.1 #1s
         HVBattSOC = byte_data[1]*0.4 #1s
@@ -577,9 +616,13 @@ class FoxPiReadDID:
             "HVBattErr": battery_bit4[0]
         }
 
-    def FoxPi_TPMS_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_TPMS_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_TPMS_Status to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x100E, "FoxPi_TPMS_Status")
+
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
 
         LF_Wheel_Pressure = byte_data[0]*0.25+7.26
         RF_Wheel_Pressure = byte_data[1]*0.25+7.26
@@ -626,9 +669,13 @@ class FoxPiReadDID:
             "TPMSWarnindi": TPMSWarnindi
         }
 
-    def FoxPi_Pedal_position(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Pedal_position(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Pedal_position to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x100F,"FoxPi_Pedal_position")
+
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
 
         ActAPSPosn = byte_data[0]*0.392
         BrkPedalPos = self.bytes_to_int(byte_data[1:3])*0.4
@@ -641,9 +688,13 @@ class FoxPiReadDID:
             "BrkPedalPos": BrkPedalPos
         }
 
-    def FoxPi_Motor_Status(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Motor_Status(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Motor_Status to read DID 0x1002 and decode the response byte data into a dict
         
         byte_data = self.read(0x1010,"FoxPi_Motor_Status")
+
+        #Get the raw signal value from the response byte array, then compute the physical value using: physical = raw * factor + offset. 
+        #The offset may be a negative value, so we'll use subtraction in the calculation
+        #if there is no offset(=0) or factor, it is not included in the calculation.
 
         Rr_TqSource = byte_data[0]
         Rr_TMTqReq_toNidec = self.bytes_to_int(byte_data[1:3])-530
@@ -668,9 +719,11 @@ class FoxPiReadDID:
             "Rr_TMSpd_Nidec": Rr_TMSpd_Nidec                    # rpm
         }
 
-    def FoxPi_Shifter_allow(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Shifter_allow(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Shifter_allow to read DID 0x1002 and decode the response byte data into a dict
         
         byte_data = self.read(0x1011,"FoxPi_Shifter_allow")
+
+        #Get the raw signal value from the response byte array.
 
         VTQD_ExternalTqAllow_flg = byte_data[0] #1s
         VTQD_ExtShftAllow_flg = byte_data[1] #1s
@@ -686,9 +739,11 @@ class FoxPiReadDID:
             "VTQD_ExtDoorAllow_flg": VTQD_ExtDoorAllow_flg
         }
 
-    def FoxPi_Ctrl_Enable_Switch(self) -> Dict[str, Union[int, float, str]]:
+    def FoxPi_Ctrl_Enable_Switch(self) -> Dict[str, Union[int, float, str]]:#Define FoxPi_Ctrl_Enable_Switch to read DID 0x1002 and decode the response byte data into a dict
 
         byte_data = self.read(0x1012,"FoxPi_Ctrl_Enable_Switch")
+        
+        #Get the raw signal value from the response byte array.
 
         Ctrl_bit1 = [int(bit) for bit in bin(byte_data[0])[2:].zfill(8)]
         Ctrl_Enable_Switch = Ctrl_bit1[7]
@@ -703,24 +758,24 @@ class FoxPiReadDID:
 
 
 
-print(f"{datetime.datetime.now()}: Connecting to vehicle at {DOIP_SERVER_IP} with logical address {DoIP_LOGICAL_ADDRESS}")
-doip_client = DoIPClient(DOIP_SERVER_IP, DoIP_LOGICAL_ADDRESS, protocol_version=3)
-uds_connection = DoIPClientUDSConnector(doip_client)
-assert uds_connection.is_open
-with Client(uds_connection, request_timeout=4, config=get_uds_client()) as client:
+print(f"{datetime.datetime.now()}: Connecting to vehicle at {DOIP_SERVER_IP} with logical address {DoIP_LOGICAL_ADDRESS}") # print the DOIP_SERVER_IP,DoIP_LOGICAL_ADDRESS and the current time
+doip_client = DoIPClient(DOIP_SERVER_IP, DoIP_LOGICAL_ADDRESS, protocol_version=3) #creat a DoIP object (IP, Logical Address and DoIP protocol version 3)
+uds_connection = DoIPClientUDSConnector(doip_client) #Use the previously created doip_client to construct a connection object for UDS (diagnostic services).
+assert uds_connection.is_open #Verify whether the UDS connection has been successfully established
+with Client(uds_connection, request_timeout=4, config=get_uds_client()) as client: #Execute it within a context manager so that the connection is automatically closed when finished.
     Foxpi = FoxPiReadDID(client)
-    #Foxpi.FoxPi_Driving_Ctrl()
+    #Foxpi.FoxPi_Driving_Ctrl() 
     #Foxpi.FoxPi_Motion_Status()
     #Foxpi.FoxPi_Brake_Status()
     #Foxpi.FoxPi_WheelSpeed()
     #Foxpi.FoxPi_EPS_Status()
-    #Foxpi.FoxPi_Button_Status()
+    Foxpi.FoxPi_Button_Status()
     #Foxpi.FoxPi_USS_Distance()
     #Foxpi.FoxPi_USS_Fault_Status()
     #Foxpi.FoxPi_PTG_USS_SW()
     #Foxpi.FoxPi_Switch_Status()
     #Foxpi.FoxPi_Lamp_Status()
-    Foxpi.FoxPi_Lamp_Ctrl()
+    #Foxpi.FoxPi_Lamp_Ctrl()
     #Foxpi.FoxPi_Battery_Status()
     #Foxpi.FoxPi_TPMS_Status()
     #Foxpi.FoxPi_Pedal_position()
