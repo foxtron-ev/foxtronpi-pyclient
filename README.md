@@ -6,10 +6,10 @@ This is an example python project to control the FoxtronEV's car model FoxtronPi
 
 | File Name | Description |
 |----------------|------------------------------|
-| `FoxPi_read.py`  | Read vehicle signal status(e.g. vehicle speed, lights, battary, motor, etc.) |
-| `FoxPi_write.py` | Control vehicle signals（e.g. acceleration, target speed, lights, gear shifting）    |
-| `README.md`     | Project documentation                  |
-| `pyproject.toml` | Package requirements |
+| `FoxPi_read.py`  | Function Library to Read Vehicle Signal Status(e.g. vehicle speed, lights, battary, motor, etc.) |
+| `FoxPi_write.py` | Function Library to Control Vehicle Signals（e.g. acceleration, target speed, lights, gear shifting）    |
+| `README.md`     | Project Documentation |
+| `pyproject.toml` | Package Requirements |
 
 ---
 
