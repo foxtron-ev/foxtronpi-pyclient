@@ -91,12 +91,12 @@ pip install cryptography
 
 ### Read the status of vehicle signals
 ```bash
-python3 FoxPi_read.py
+python3 read.py
 ```
 
 ### Write the vehicle Control signals
 ```bash
-python3 FoxPi_write.py
+python3 write.py
 ```
 
 ## <img src="https://img.icons8.com/fluent/24/visual-studio-code-2019.png" width="24"/> Visual Studio Code development environment 
