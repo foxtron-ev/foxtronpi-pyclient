@@ -757,19 +757,19 @@ class FoxPiReadDID:
         }
 
 
-
+''''
 print(f"{datetime.datetime.now()}: Connecting to vehicle at {DOIP_SERVER_IP} with logical address {DoIP_LOGICAL_ADDRESS}") # print the DOIP_SERVER_IP,DoIP_LOGICAL_ADDRESS and the current time
 doip_client = DoIPClient(DOIP_SERVER_IP, DoIP_LOGICAL_ADDRESS, protocol_version=3) #creat a DoIP object (IP, Logical Address and DoIP protocol version 3)
 uds_connection = DoIPClientUDSConnector(doip_client) #Use the previously created doip_client to construct a connection object for UDS (diagnostic services).
 assert uds_connection.is_open #Verify whether the UDS connection has been successfully established
 with Client(uds_connection, request_timeout=4, config=get_uds_client()) as client: #Execute it within a context manager so that the connection is automatically closed when finished.
-    Foxpi = FoxPiReadDID(client)
+    Foxpi = FoxPiReadDID(client)     
     #Foxpi.FoxPi_Driving_Ctrl() 
     #Foxpi.FoxPi_Motion_Status()
     #Foxpi.FoxPi_Brake_Status()
     #Foxpi.FoxPi_WheelSpeed()
     #Foxpi.FoxPi_EPS_Status()
-    Foxpi.FoxPi_Button_Status()
+    #Foxpi.FoxPi_Button_Status()
     #Foxpi.FoxPi_USS_Distance()
     #Foxpi.FoxPi_USS_Fault_Status()
     #Foxpi.FoxPi_PTG_USS_SW()
@@ -782,3 +782,4 @@ with Client(uds_connection, request_timeout=4, config=get_uds_client()) as clien
     #Foxpi.FoxPi_Motor_Status()
     #Foxpi.FoxPi_Shifter_allow()
     #Foxpi.FoxPi_Ctrl_Enable_Switch()
+'''

@@ -11,7 +11,7 @@ import math
 
 class FoxPiWriteDID:
 
-    def __init__(self, client: Client): # Initialization function; pass in the client parameter, which is the UDS communication object.
+    def __init__(self, client): # Initialization function; pass in the client parameter, which is the UDS communication object.
         self.client = client
 
     def debug_print(self,msg): #Print the current time (in blue) and the message
@@ -80,9 +80,9 @@ class FoxPiWriteDID:
             print(f"Processed input: {merged_bytes}")
 
             #Change Diagnostic Session to Extended DiagnosticSession
-            response = client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
-            response = client.unlock_security_access(1)#Set the security_access key=1
-            response = client.write_data_by_identifier(0x1001, merged_bytes)#write the previously merged_bytes to DID(0x1001)
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1)#Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x1001, merged_bytes)#write the previously merged_bytes to DID(0x1001)
 
             self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
 
@@ -102,7 +102,6 @@ class FoxPiWriteDID:
             
             #to convert all elements to int, if they are float and integer, otherwise keep as is
             DID_list = [int(x) if float(x).is_integer() else (_ for _ in ()).throw(ValueError(f"\033[91mYou input not int：{x}\033[0m")) for x in user_input]
-            print(f"Input values: {DID_list}")
 
             #Use to limit values and prevent out-of-range writes to the signal.
             Value_limit = [
@@ -183,9 +182,9 @@ class FoxPiWriteDID:
             print(f"Merged bytes: {merged_bytes}")
 
             #Change Diagnostic Session to Extended DiagnosticSession
-            response = client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
-            response = client.unlock_security_access(1) #Set the security_access key=1
-            response = client.write_data_by_identifier(0x100C, merged_bytes)  #write the previously merged_bytes to DID(0x100C)
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1) #Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x100C, merged_bytes)  #write the previously merged_bytes to DID(0x100C)
 
             self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
 
@@ -202,7 +201,6 @@ class FoxPiWriteDID:
             #Ensure user_input length is not equal to 25
             if len(user_input) != 1:
                 raise ValueError(f"\033[91mFoxPi_Ctrl_Enable_Switch Input must contain exactly 1 values but you only provided {len(user_input)} values.\033[0m")
-            print(f"Input values: {user_input}")
             
             #Validate: user_input[0] must be an integer 0 or 1
             if not isinstance(user_input[0], int) or user_input[0] not in [0, 1]:
@@ -212,9 +210,9 @@ class FoxPiWriteDID:
             Ctrl_Enable = user_input[0].to_bytes(1, byteorder="big") # Convert user_input[0] to a 1-byte value (big-endian)
 
             #Change Diagnostic Session to Extended DiagnosticSession
-            response = client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
-            response = client.unlock_security_access(1) #Set the security_access key=1
-            response = client.write_data_by_identifier(0x1012, Ctrl_Enable) #write the previously merged_bytes to DID(0x1012)
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1) #Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x1012, Ctrl_Enable) #write the previously merged_bytes to DID(0x1012)
 
             self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
 
@@ -232,9 +230,9 @@ class FoxPiWriteDID:
             print(f"Processed input: {data_toFF}")
 
             #Change Diagnostic Session to Extended DiagnosticSession
-            response = client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
-            response = client.unlock_security_access(1)#Set the security_access key=1
-            response = client.write_data_by_identifier(0x1001, data_toFF)#write the previously merged_bytes to DID(0x1001)
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1)#Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x1001, data_toFF)#write the previously merged_bytes to DID(0x1001)
 
 
             self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
@@ -248,6 +246,7 @@ class FoxPiWriteDID:
 
 
 
+'''
 doip_client = DoIPClient(DOIP_SERVER_IP, DoIP_LOGICAL_ADDRESS, protocol_version=3) #creat a DoIP object (IP, Logical Address and DoIP protocol version 3)
 uds_connection = DoIPClientUDSConnector(doip_client) #Use the previously created doip_client to construct a connection object for UDS (diagnostic services).
 assert uds_connection.is_open #Verify whether the UDS connection has been successfully established
@@ -260,3 +259,4 @@ with Client(uds_connection, request_timeout=4, config=get_uds_client()) as clien
     #FoxPi.FoxPi_Lamp_Ctrl(user_input=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
     #FoxPi.FoxPi_Ctrl_Enable_Switch(user_input=[1])
 
+'''
