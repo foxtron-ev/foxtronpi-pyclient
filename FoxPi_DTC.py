@@ -12,28 +12,35 @@ class FoxPiDTC:
         self.doip_client = doip_client
 
     def Read_DTCs(self):
-        self.doip_client._ecu_logical_address = DoIP_FUNCTION_ADDRESS
-        resp = self.client.read_dtc_information(ReadDTCInformation.Subfunction.reportDTCByStatusMask, status_mask=0x0F)
+        self.doip_client._ecu_logical_address = DoIP_FUNCTION_ADDRESS # change to the functional address to read all DTCs
+        resp = self.client.read_dtc_information(ReadDTCInformation.Subfunction.reportDTCByStatusMask, status_mask=0x0F) # 0x0F to read problem DTC 
         print(f"response: {resp}")
         if resp.service_data.dtcs is None or len(resp.service_data.dtcs) == 0:
-            print("No DTCs found.")
-            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS
-            return []
+            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS # change back to the physical address
+            return "Susscess, no DTCs found"
         else:
+            cfg = {}
             for dtc in resp.service_data.dtcs:
-                print(f"DTC=0x{dtc.id:06X}  pending={dtc.status.pending}  confirmed={dtc.status.confirmed}  test_failed={dtc.status.test_failed}")
-            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS
-            return 
+                #print(f"DTC=0x{dtc.id:06X}  pending={dtc.status.pending}  confirmed={dtc.status.confirmed}  test_failed={dtc.status.test_failed}")
+                cfg[dtc] ={
+                    "DTC": f"0x{dtc.id:06X}",
+                    "pending": dtc.status.pending,
+                    "confirmed": dtc.status.confirmed,
+                    "test_failed": dtc.status.test_failed
+                }
+            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS # change back to the physical address
+            return cfg
     
     def Clear_DTCs(self):
-        self.doip_client._ecu_logical_address = DoIP_FUNCTION_ADDRESS
+        self.doip_client._ecu_logical_address = DoIP_FUNCTION_ADDRESS # change to the functional address to clear all DTCs
         try:
-            resp = self.client.clear_dtc(group=0xFFFFFF)
-            print(f"Clear DTCs successful, response: {resp}")
-            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS
-            return
+            resp = self.client.clear_dtc(group=0xFFFFFF) # 0xFFFFFF= clear all DTC
+            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS# change back to the physical address
+            return "Clear DTCs successful"
         except Exception as e:
-            print(f"Clear DTCs failed: {e}")
-            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS
-            return
+            #print(f"Clear DTCs failed: {e}")
+            self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS # change back to the physical address
+            return e
 
+
+    

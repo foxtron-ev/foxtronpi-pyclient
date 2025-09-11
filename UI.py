@@ -1,10 +1,3 @@
-# foxpi_ui_pyqt.py — FoxPi DID Control Panel (PyQt5)
-# Usage:
-#   1) pip install pyqt5
-#   2) Ensure your project can import doipclient, udsoncan, FoxPi_write
-#   3) python foxpi_ui_pyqt.py
-#   4) Click "Connect" first, then select DID, choose whether to use default values, then click "Run"
-
 import sys
 from typing import List, Any, Dict
 
@@ -12,12 +5,8 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFormLayout, QLineEdit, QCheckBox, QTextEdit, QMessageBox,
-    QSizePolicy, QScrollArea, QFrame
-)
+    QScrollArea, QFrame)
 
-# === External modules ===
-# These may fail to import if dependencies are not installed.
-# In that case, the UI will show an import warning.
 try:
     from doipclient import DoIPClient
     from doipclient.connectors import DoIPClientUDSConnector
