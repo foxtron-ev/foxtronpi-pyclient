@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QFormLayout, QLineEdit, QCheckBox, QTextEdit, QMessageBox,
-    QScrollArea, QFrame)
+    QScrollArea, QFrame, QSizePolicy, QListView)
 
 try:
     from doipclient import DoIPClient
@@ -15,6 +15,8 @@ try:
     from client_config import DOIP_SERVER_IP, DoIP_LOGICAL_ADDRESS
     from FoxPi_write import FoxPiWriteDID
     from FoxPi_read import FoxPiReadDID
+    from FoxPi_DTC import FoxPiDTC
+
 except Exception as e:
     DoIPClient = DoIPClientUDSConnector = Client = FoxPiWriteDID = object  # type: ignore
     DOIP_SERVER_IP = "0.0.0.0"
@@ -66,7 +68,7 @@ class UDSWorker(QThread): # Declare a class that inherits from QThread
             self.failed.emit(str(e)) # emit the error message to the main thread when failed
 
 class ConnectWorker(QThread):
-    connected = pyqtSignal(object, object)
+    connected = pyqtSignal(object, object, object)
     failed = pyqtSignal(str)
 
     def __init__(self):
@@ -83,7 +85,9 @@ class ConnectWorker(QThread):
             uds_client.open()
             write_did = FoxPiWriteDID(uds_client)
             read_did = FoxPiReadDID(uds_client)
-            self.connected.emit(write_did, read_did)# After successful connection, emit the connected signal
+            dtc = FoxPiDTC(uds_client, doip_client)
+
+            self.connected.emit(write_did, read_did, dtc)# After successful connection, emit the connected signal
         
         except Exception as e:
             self.failed.emit(str(e))# After connect failed, emit the error message to the main thread
@@ -113,6 +117,9 @@ class FoxPiUI(QWidget):
 
         self.combo_did = QComboBox() # QComboBox() is a dropdown list widget.
         self.combo_did.setEnabled(False) #lock the dropdown list if not connected FD.
+        self.combo_did.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.combo_did.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+        self.combo_did.setView(QListView())
         self.combo_RWchoose = QComboBox()
         self.combo_RWchoose.addItems(["Write", "Read"]) 
         self.combo_RWchoose.setCurrentIndex(0) #set the default value to "Write"
@@ -152,6 +159,20 @@ class FoxPiUI(QWidget):
         run_row.addStretch()
         root.addLayout(run_row)
 
+        dtc_row = QHBoxLayout()
+        self.chk_dtc_mode = QCheckBox("DTC Mode")
+        self.chk_dtc_mode.setEnabled(False)
+        self.btn_read_dtc = QPushButton("Read DTC")
+        self.btn_clear_dtc = QPushButton("Clear DTC")
+        self.btn_read_dtc.setEnabled(False)
+        self.btn_clear_dtc.setEnabled(False)
+        dtc_row.addWidget(self.chk_dtc_mode)
+        dtc_row.addStretch()
+        dtc_row.addWidget(self.btn_read_dtc)
+        dtc_row.addWidget(self.btn_clear_dtc)
+        root.addLayout(dtc_row)
+
+
         root.addWidget(self._hline()) # add a horizontal line to separate the log area from the above widgets.
         self.log = QTextEdit() # QTextEdit() is a multi-line text editing widget.
         self.log.setReadOnly(True) # set the text editing widget to be read-only
@@ -166,6 +187,10 @@ class FoxPiUI(QWidget):
         self.btn_fill_defaults.clicked.connect(self.on_fill_defaults) # when the Fill Defaults button is clicked, call the on_fill_defaults function
         self.btn_clear.clicked.connect(self.on_clear_fields) # when the Clear Fields button is clicked, call the on_clear_fields function
         self.btn_run.clicked.connect(self.on_run) # when the Run button is clicked, call the on_run function
+
+        self.chk_dtc_mode.stateChanged.connect(self.on_dtc_mode_changed)
+        self.btn_read_dtc.clicked.connect(self.on_read_dtc)
+        self.btn_clear_dtc.clicked.connect(self.on_clear_dtc)
 
         if IMPORT_ERROR:
             self.append_log(f"Import warning: {IMPORT_ERROR}")
@@ -197,11 +222,12 @@ class FoxPiUI(QWidget):
             self.connect_worker.quit()
             self.on_connect_failed("Connection timeout (exceeded 5 seconds)....")
     
-    def on_connect_done(self,write_did, read_did):
+    def on_connect_done(self,write_did, read_did, dtc):
         self.connect_timer.stop()
         self.connect_fail_flag = True # set the flag to True to prevent the timeout function from triggering
         self.WriteDID = write_did
         self.ReadDID = read_did
+        self.DTC = dtc
         self.append_log("Connection Successful.")
         self.write_config = self._build_write_config(self.WriteDID)
         self.read_config = self._build_read_config(self.ReadDID)
@@ -214,6 +240,11 @@ class FoxPiUI(QWidget):
         self.chk_use_default.setEnabled(True)
         self.btn_fill_defaults.setEnabled(True)
         self.btn_clear.setEnabled(True)
+
+        self.chk_dtc_mode.setEnabled(True)
+        self.btn_read_dtc.setEnabled(True)
+        self.btn_clear_dtc.setEnabled(True)
+
         self.on_mode_changed()
     
     def on_connect_failed(self, msg: str):
@@ -253,6 +284,13 @@ class FoxPiUI(QWidget):
             self.btn_fill_defaults.setEnabled(False)
             self.btn_clear.setEnabled(False)
 
+            self.chk_dtc_mode.blockSignals(True)
+            self.chk_dtc_mode.setChecked(False)
+            self.chk_dtc_mode.blockSignals(False)
+            self.chk_dtc_mode.setEnabled(False)
+            self.btn_read_dtc.setEnabled(False)
+            self.btn_clear_dtc.setEnabled(False)
+
             self.append_log("Disconnected")
         except Exception as e:
             self.append_log(f"Error while disconnecting: {e}")
@@ -283,8 +321,8 @@ class FoxPiUI(QWidget):
             4: ["Ctrl_Enable_Switch"],
         }
         default_value = {
-            1: [-10, 1, 255.875, 1, 1, 1, -900, 1, 1, -10, 1, 4, 7, 20],
-            2: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,7,63,100,7],
+            1: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            2: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
             3: [],
             4: [0]
         }
@@ -306,18 +344,14 @@ class FoxPiUI(QWidget):
             4: Foxpi.FoxPi_WheelSpeed,
             5: Foxpi.FoxPi_EPS_Status,
             6: Foxpi.FoxPi_Button_Status,
-            7: Foxpi.FoxPi_USS_Distance,
-            8: Foxpi.FoxPi_USS_Fault_Status,
-            9: Foxpi.FoxPi_PTG_USS_SW,
-            10: Foxpi.FoxPi_Switch_Status,
-            11: Foxpi.FoxPi_Lamp_Status,
-            12: Foxpi.FoxPi_Lamp_Ctrl,
-            13: Foxpi.FoxPi_Battery_Status,
-            14: Foxpi.FoxPi_TPMS_Status,
-            15: Foxpi.FoxPi_Pedal_position,
-            16: Foxpi.FoxPi_Motor_Status,
-            17: Foxpi.FoxPi_Shifter_allow,
-            18: Foxpi.FoxPi_Ctrl_Enable_Switch
+            7: Foxpi.FoxPi_Switch_Status,
+            8: Foxpi.FoxPi_Lamp_Status,
+            9: Foxpi.FoxPi_Lamp_Ctrl,
+            10: Foxpi.FoxPi_Battery_Status,
+            11: Foxpi.FoxPi_Pedal_position,
+            12: Foxpi.FoxPi_Motor_Status,
+            13: Foxpi.FoxPi_Shifter_allow,
+            14: Foxpi.FoxPi_Ctrl_Enable_Switch
         }
         cfg_r = {}
         for i, func in RID_map.items():
@@ -339,6 +373,23 @@ class FoxPiUI(QWidget):
         if self.combo_did.count() > 0: # if combo box has items, select the first item and trigger on_did_changed
             self.combo_did.setCurrentIndex(0) # select the first item
             self.on_did_changed() # manually trigger on_did_changed for the first item
+        self._resize_did_combo_to_longest()
+
+    def _resize_did_combo_to_longest(self):
+        longest = ""
+        for i in self.config:
+            txt = str(self.config[i]["name"])
+            if len(txt) > len(longest):
+                longest = txt
+
+        fm = self.combo_did.fontMetrics()
+
+        w = fm.boundingRect(longest).width() + 40
+
+        self.combo_did.setMinimumWidth(w)
+
+        #if self.combo_did.view() is not None:
+            #self.combo_did.view().setMinimumWidth(w + 20)
 
     def on_did_changed(self): # Triggered when the selected DID changes
         wid = self.combo_did.currentData() # get the selected number(e.g. 1, 2, 3, 4)
@@ -466,9 +517,96 @@ class FoxPiUI(QWidget):
 
     def on_run_failed(self, msg: str):
         self.btn_run.setEnabled(True) # re-enable the Run button
+
+        self.btn_read_dtc.setEnabled(True)
+        self.btn_clear_dtc.setEnabled(True)
+
         self.append_log(f"Run failed: {msg}")
         QMessageBox.critical(self, "Run Failed", msg) # show the error message in a pop-up window
 
+    
+    
+    def on_dtc_mode_changed(self, state):
+        enabled = (state == Qt.Checked)
+        self._apply_dtc_mode(enabled)
+        self.form_clear()
+
+    def _apply_dtc_mode(self, enabled: bool):
+        to_lock = [
+            self.combo_did, self.combo_RWchoose,
+            self.chk_use_default, self.btn_fill_defaults, self.btn_clear,
+            self.btn_run
+        ]
+        for w in to_lock:
+            w.setEnabled(not enabled) # lock and unlock other widgets
+
+        can_dtc = (self.DTC is not None)
+        self.btn_read_dtc.setEnabled(can_dtc and True) 
+        self.btn_clear_dtc.setEnabled(can_dtc and True)
+        self.chk_dtc_mode.setEnabled(True) 
+
+        if enabled:
+            self.append_log("DTC mode activate : Only can opterating the Read DTC / Clear DTC。")
+        else:
+            self.append_log("DTC mode deavtive")
+
+    def _run_simple(self, func):
+        self.btn_read_dtc.setEnabled(False)
+        self.btn_clear_dtc.setEnabled(False)
+
+        self.worker = UDSWorker(self.WriteDID, self.ReadDID, 0, func, [], [], True, [])
+        self.worker.done.connect(self.on_dtc_done)
+        self.worker.failed.connect(self.on_run_failed)
+        self.worker.start()
+
+    def on_read_dtc(self):
+        if not self.DTC:
+            QMessageBox.warning(self, "Not Connected", "Please connect first")
+            return
+        self.append_log("Reading DTCs…")
+        self._run_simple(self.DTC.Read_DTCs)
+
+    def on_clear_dtc(self):
+        if not self.DTC:
+            QMessageBox.warning(self, "Not Connected", "Please connect first")
+            return
+
+        ret = QMessageBox.question(self, "Confirm", "Are you sure you want to clear all DTCs?",
+                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if ret != QMessageBox.Yes:
+            return
+        self.append_log("Clearing DTCs…")
+        self._run_simple(self.DTC.Clear_DTCs)
+
+    def on_dtc_done(self, result):
+
+        self.btn_read_dtc.setEnabled(True)
+        self.btn_clear_dtc.setEnabled(True)
+        self._show_dtc_result(result)
+
+    def _show_dtc_result(self, result: Any):
+        self.form_clear()
+        if isinstance(result, dict) and result:
+            # result: { dtc_obj: {"DTC": "...", "pending": ..., ...}, ... }
+            for idx, (_, info) in enumerate(result.items(), 1):
+                header = QLabel(f"--- DTC #{idx} ---")
+                header.setStyleSheet("font-weight: bold;")
+                self.form.addRow(header, QLabel(""))
+                for k, v in info.items():
+                    le = QLineEdit(str(v))
+                    le.setReadOnly(True)
+                    le.setStyleSheet("color: blue; background-color: #f0f0f0;")
+                    le.setEnabled(False)
+                    self.form.addRow(QLabel(k + ":"), le)
+            self.append_log(f"Read DTCs complete. {len(result)} item(s).")
+        else:
+            # 字串或空結果
+            text = str(result)
+            self.form.addRow(QLabel(text))
+            self.append_log(text)
+
+    
+    
     def append_log(self, text: str):
         self.log.append(text)
         self.log.ensureCursorVisible() # When you add new text,the cursor will move to the end
