@@ -22,9 +22,9 @@ with Client(uds_connection, request_timeout=4, config=get_uds_client()) as clien
     }
 
     WID_param = {
-        1: ["AccReq","AccReq_A","TargetSpdReq","TargetSpdReq_A","Angle_Target_Valid","Angle_Target_Req",
-            "Angle_Target","Torque_Target_Valid","Torque_Target_Req","Torque_Target","VINP_APSVMCReqA_flg",
-            "VINP_APSStaSystem_enum","VINP_APSShiftPosnReq_enum","VINP_APSSpeedCMD_kph"],
+        1: ["AccReq","AccReq_A","TargetSpd","TargetSpd_A","Angle_V","Angle_Req",
+            "Angle","Torque_V","Torque_Req","Torque","APSVMCReqA_flg",
+            "APSStaSystem","APSShiftPosnReq","APSSpeedCMD"],
         2: ["Position_Lamp_Control_Enable","Position_Lamp","Low_Beam_Control_Enable","Low_Beam",
             "High_Beam_Control_Enable","High_Beam","Right_Daytime_Running_Light_Control_Enable",
             "Right_Daytime_Running_Light","Left_Daytime_Running_Light_Control_Enable","Left_Daytime_Running_Light",
