@@ -27,31 +27,6 @@ class FoxPiWriteDID:
             #to convert all elements to int, if they are float and integer, otherwise keep as is
             DID_list = [int(x) if isinstance(x, float) and x.is_integer() else x for x in user_input]
 
-            '''
-            #Use to limit values and prevent out-of-range writes to the signal.
-            Value_limit = [
-                (0, -15, 10.55, "Acceleration Request"),
-                (1, 0, 1, "Acceleration Request A"),
-                (2, 0, 255.875, "Target Speed Request"),
-                (3, 0, 1, "Target Speed Request A"),
-                (4, 0, 1, "Angle Target Valid"),
-                (5, 0, 1, "Angle Target Request"),
-                (6, -900, 900, "Angle Target"),
-                (7, 0, 1, "Torque Target Valid"),
-                (8, 0, 1, "Torque Target Request"),
-                (9, -10, 10, "Torque Target"),
-                (10, 0, 1, "APS_flg"),
-                (11, 0, 4, "VINP_APSStaSystem_enum"),
-                (12, 0, 7, "VINP_APSShiftPosnReq_enum"),
-                (13, 0, 20, "VINP_APSSpeedCMD_kph"),
-            ]
-
-            #Check whether user_input is out-of-range the specified range.
-            for idx, min, max, name in Value_limit:
-                idx_value = DID_list[idx]
-                if not (min <=idx_value <= max): #Print an error if it not within the specified range
-                    raise ValueError(f"\033[91mFoxPi_Driving_Ctrl {name}[{idx}] must be between \033[33m{min} \033[91mand \033[33m{max} \033[91mbut you provided <{idx_value}>\033[0m")
-            '''
             # <<4 is means shift left by 4 bits, <<1 is shift left by 1 bit
             # 0 0 0 0 0 0 0 0
             # 7 6 5 4 3 2 1 0
@@ -104,42 +79,6 @@ class FoxPiWriteDID:
             #to convert all elements to int, if they are float and integer, otherwise keep as is
             DID_list = [int(x) if float(x).is_integer() else (_ for _ in ()).throw(ValueError(f"\033[91mYou input not int：{x}\033[0m")) for x in user_input]
 
-            '''
-            #Use to limit values and prevent out-of-range writes to the signal.
-            Value_limit = [
-                (0, 0, 1, "Position_Lamp_Control_Enable"),
-                (1, 0, 1, "Position_Lamp"),
-                (2, 0, 1, "Low_Beam_Control_Enable"),
-                (3, 0, 1, "Low_Beam"),
-                (4, 0, 1, "High_Beam_Control_Enable"),
-                (5, 0, 1, "High_Beam"),
-                (6, 0, 1, "Right_Daytime_Running_Light_Control_Enable"),
-                (7, 0, 1, "Right_Daytime_Running_Light"),
-                (8, 0, 1, "Left_Daytime_Running_Light_Control_Enable"),
-                (9, 0, 1, "Left_Daytime_Running_Light"),
-                (10, 0, 1, "Left_TurnLamp_Control_Enable"),
-                (11, 0, 1, "Left_TurnLamp"),
-                (12, 0, 1, "Right_TurnLamp_Control_Enable"),
-                (13, 0, 1, "Right_TurnLamp"),
-                (14, 0, 1, "Brake_Lamp_Control_Enable"),
-                (15, 0, 1, "Brake_Lamp"),
-                (16, 0, 1, "Reverse_Lamp_Control_Enable"),
-                (17, 0, 1, "Reverse_Lamp"),
-                (18, 0, 1, "Rear_Fog_Lamp_Control_Enable"),
-                (19, 0, 1, "Rear_Fog_Lamp"),
-                (20, 0, 1, "Amblight_Control_Enable"),
-                (21, 0, 7, "Control area"),
-                (22, 0, 63, "RGB 64 Color"),
-                (23, 0, 100, "Bright adjustment"),
-                (24, 0, 7, "Breathing and Alert Mode"),
-            ]
-
-            #Check whether user_input is out-of-range the specified range.
-            for idx, min, max, name in Value_limit:
-                idx_value = DID_list[idx]
-                if not (min <= idx_value <= max):
-                    raise ValueError(f"\033[91mFoxPi_Lamp_Ctrl {name}[{idx}] must be between \033[33m{min} \033[91mand \033[33m{max} \033[91mbut you provided <{idx_value}>\033[0m")
-            '''
             
             # bit1,bit2,bit3: Pack all user input values into their corresponding bit positions
             bit1 = ((DID_list[7] << 7) | #Right_Daytime_Running_Light
@@ -204,11 +143,7 @@ class FoxPiWriteDID:
             #Ensure user_input length is not equal to 25
             if len(user_input) != 1:
                 raise ValueError(f"\033[91mFoxPi_Ctrl_Enable_Switch Input must contain exactly 1 values but you only provided {len(user_input)} values.\033[0m")
-            '''
-            #Validate: user_input[0] must be an integer 0 or 1
-            if not isinstance(user_input[0], int) or user_input[0] not in [0, 1]:
-                raise ValueError(f"\033[91mFoxPi_Ctrl_Enable_Switch Input must be either 0 or 1 but you provided {user_input[0]}\033[0m")
-                '''
+            
             # Convert user_input[0] to a 1-byte value (big-endian)
             Ctrl_Enable = user_input[0].to_bytes(1, byteorder="big") # Convert user_input[0] to a 1-byte value (big-endian)
 
