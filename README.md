@@ -13,8 +13,8 @@ This is an example python project to control the FoxtronEV's car model FoxtronPi
 | `FoxPi_write.py` | Function Library to Control Vehicle Signals（e.g. acceleration, target speed, lights, gear shifting）    |
 | `FoxPi_DTC.py`     | Function Library to Read and clear DTCs |
 | `FoxPi_TP.py`     | Function Library to send the TesterPresent service request and keep the connection alive. |
-| `client_config.cpython-310-x86_64-linux-gnu.so`     | Connection config .so file |
-| `client_config.cpython-310-x86_64-linux-gnu.so`     | Diagnostic config .so file |
+| `client_config.cpython-310-x86_64-linux-gnu.so`     | Connection configuration (.so) file |
+| `common.cpython-310-x86_64-linux-gnu.so`     | Diagnostic configuration (.so) file |
 | `README.md`     | Project Documentation |
 | `requirement.txt` | Package Requirements |
 | `read.py` | Sample code: Read vehicle signal status |
