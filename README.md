@@ -18,7 +18,7 @@ This is an example python project to control the FoxtronEV's car model FoxtronPi
 | `README.md`     | Project Documentation |
 | `requirement.txt` | Package Requirements |
 | `read.py` | Sample code: Read vehicle signal status |
-| `write.py` | Sample code: Write vehicle signal parameter |
+| `write.py` | Sample code: Write vehicle control parameter |
 
 ---
 
@@ -103,7 +103,7 @@ pip install cryptography
 python3 read.py
 ```
 
-### Write the vehicle Control signals
+### Write the vehicle Control parameter
 ```bash
 python3 write.py
 ```
