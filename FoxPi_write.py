@@ -1,0 +1,183 @@
+from doipclient import DoIPClient
+from doipclient.connectors import DoIPClientUDSConnector
+from common import get_uds_client
+from client_config import DOIP_SERVER_IP, DoIP_LOGICAL_ADDRESS
+from udsoncan.client import Client
+from udsoncan.services import *
+import datetime
+import os
+import math
+
+
+class FoxPiWriteDID:
+
+    def __init__(self, client): # Initialization function; pass in the client parameter, which is the UDS communication object.
+        self.client = client
+
+    def debug_print(self,msg): #Print the current time (in blue) and the message
+        print(f"\033[34m{datetime.datetime.now()}\033[0m: {msg}")
+
+    def FoxPi_Driving_Ctrl(self,user_input:str) -> bytes: #Define FoxPi_Driving_Ctrl to write DID 0x1001
+
+        try:
+            #Ensure user_input length is not equal to 14
+            if len(user_input) != 14:
+                raise ValueError(f"\033[91mFoxPi_Driving_Ctrl Input must contain exactly 14 values but you only provided {len(user_input)} values.\033[0m")
+            
+            #to convert all elements to int, if they are float and integer, otherwise keep as is
+            DID_list = [int(x) if isinstance(x, float) and x.is_integer() else x for x in user_input]
+
+            # <<4 is means shift left by 4 bits, <<1 is shift left by 1 bit
+            # 0 0 0 0 0 0 0 0
+            # 7 6 5 4 3 2 1 0
+            # Ex: 7 6 5 4, "<< 4" | 3 2 1, "<< 1" | 0
+            # Ex: 7 6 5 4 3 2 1 "<< 1" | 0
+            APS_bit = (DID_list[12] << 4) | (DID_list[11] << 1) | DID_list[10] # | is bitwise OR operation combining the bits into a single byte
+
+            # pack all user_input value into the byte_list array
+            byte_list = [
+                math.floor((DID_list[0]-(-15))/0.05).to_bytes(3, byteorder="big"), #math.floor rounds down to the nearest integer(3.7->3,-3.7->-4,5.0->5), ACCReq = 3byte
+                math.floor(DID_list[1]).to_bytes(1, byteorder="big"), #ACCReq_A = 1byte
+                math.floor(DID_list[2]/0.125).to_bytes(3, byteorder="big"), #TargetSpdReq = 3byte
+                math.floor(DID_list[3]).to_bytes(1, byteorder="big"), #TargetSpdReq_A = 1byte
+                math.floor(DID_list[4]).to_bytes(1, byteorder="big"),#Angle_Target_Valid = 1byte
+                math.floor(DID_list[5]).to_bytes(1,byteorder="big"), #Angle_Target_Req= 1byte
+                math.floor((DID_list[6]-(-900))/0.1).to_bytes(4, byteorder="big"), #Angle_Target = 4byte
+                math.floor(DID_list[7]).to_bytes(1, byteorder="big"), #Torque_Target_Valid = 1byte
+                math.floor(DID_list[8]).to_bytes(1, byteorder="big"), #Torque_Target_Req = 1byte
+                math.floor((DID_list[9]-(-10))/0.01).to_bytes(3, byteorder="big"), #Torque_Target = 3byte
+                APS_bit.to_bytes(1, byteorder="big"),  # APS = 1byte
+                math.floor(DID_list[13]/0.125).to_bytes(1, byteorder="big") #VINP_APSSpeedCMD_kph = 1byte
+            ] # all 21 bytes for FoxPi_Driving_Ctrl
+
+            ##merge the byte_list elements into a single contiguous bytes payload.
+            merged_bytes = b''.join(byte_list)
+
+            print(f"Processed input: {merged_bytes}")
+
+            #Change Diagnostic Session to Extended DiagnosticSession
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1)#Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x1001, merged_bytes)#write the previously merged_bytes to DID(0x1001)
+
+            self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
+
+            return merged_bytes
+        
+        except Exception as e:#Print an error message if an error occurs
+            print(f"Error processing input: {e}")
+            return None
+
+    def FoxPi_Lamp_Ctrl(self,user_input:str) -> bytes:#Define FoxPi_Lamp_Ctrl to write DID 0x1001
+
+        try:
+
+            #Ensure user_input length is not equal to 25
+            if len(user_input) != 25:
+                raise ValueError(f"\033[91mFoxPi_Lamp_Ctrl Input must contain exactly 25 values but you only provided {len(user_input)} values.\033[0m")
+            
+            #to convert all elements to int, if they are float and integer, otherwise keep as is
+            DID_list = [int(x) if float(x).is_integer() else (_ for _ in ()).throw(ValueError(f"\033[91mYou input not int：{x}\033[0m")) for x in user_input]
+
+            
+            # bit1,bit2,bit3: Pack all user input values into their corresponding bit positions
+            bit1 = ((DID_list[7] << 7) | #Right_Daytime_Running_Light
+                        (DID_list[6] << 6) | #Right_Daytime_Running_Light_Control_Enable
+                        (DID_list[5] << 5) | #High_Beam
+                        (DID_list[4] << 4) | #High_Beam_Control_Enable
+                        (DID_list[3] << 3) | #Low_Beam
+                        (DID_list[2] << 2) | #Low_Beam_Control_Enable
+                        (DID_list[1] << 1) | #Position_Lamp
+                        (DID_list[0] << 0) ) #Position_Lamp_Control_Enable
+            
+            bit2 = ((DID_list[15] << 7) | #Brake_Lamp
+                        (DID_list[14] << 6) | #Brake_Lamp_Control_Enable
+                        (DID_list[13] << 5) | #Right_TurnLamp
+                        (DID_list[12] << 4) | #Right_TurnLamp_Control_Enable
+                        (DID_list[11] << 3) | #Left_TurnLamp
+                        (DID_list[10] << 2) | #Left_TurnLamp_Control_Enable
+                        (DID_list[9] << 1) | #Left_Daytime_Running_Light
+                        (DID_list[8] << 0) ) #Left_Daytime_Running_Light_Control_Enable
+            
+            bit3 = ((DID_list[21] << 5) | #Control area
+                        (DID_list[20] << 4) | #Amblight_Control_Enable
+                        (DID_list[19] << 3) | #Rear_Fog_Lamp
+                        (DID_list[18] << 2) | #Rear_Fog_Lamp_Control_Enable
+                        (DID_list[17] << 1) | #Reverse_Lamp
+                        (DID_list[16] << 0) ) #Reverse_Lamp_Control_Enable
+            
+
+
+            #Pack bit1~bit3 into the byte_list array (big-endian)
+            byte_list = [
+                bit1.to_bytes(1, byteorder="big"),
+                bit2.to_bytes(1, byteorder="big"),
+                bit3.to_bytes(1, byteorder="big"),
+                DID_list[22].to_bytes(1, byteorder="big"), #RGB 64 Color = 1byte
+                DID_list[23].to_bytes(1, byteorder="big"), #Bright adjustment
+                DID_list[24].to_bytes(1, byteorder="big")  #Breathing and Alert Mode
+            ]
+
+            print(f"Processed input: {byte_list}")
+            #merge the byte_list elements into a single contiguous bytes payload.
+            merged_bytes = b''.join(byte_list)
+            print(f"Merged bytes: {merged_bytes}")
+
+            #Change Diagnostic Session to Extended DiagnosticSession
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1) #Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x100C, merged_bytes)  #write the previously merged_bytes to DID(0x100C)
+
+            self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
+
+            return merged_bytes
+               
+        except Exception as e:#Print an error message if an error occurs
+            print(f"Error processing input: {e}")
+            return None
+
+    def FoxPi_Ctrl_Enable_Switch(self,user_input:str) -> bytes:#Define FoxPi_Ctrl_Enable_Switch to write DID 0x1001
+
+        try:
+
+            #Ensure user_input length is not equal to 25
+            if len(user_input) != 1:
+                raise ValueError(f"\033[91mFoxPi_Ctrl_Enable_Switch Input must contain exactly 1 values but you only provided {len(user_input)} values.\033[0m")
+            
+            # Convert user_input[0] to a 1-byte value (big-endian)
+            Ctrl_Enable = user_input[0].to_bytes(1, byteorder="big") # Convert user_input[0] to a 1-byte value (big-endian)
+
+            #Change Diagnostic Session to Extended DiagnosticSession
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1) #Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x1012, Ctrl_Enable) #write the previously merged_bytes to DID(0x1012)
+
+            self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
+
+            return Ctrl_Enable
+            
+        except Exception as e:#Print an error message if an error occurs
+            print(f"Error processing input: {e}")
+            return None
+            
+    def Driving_Ctrl_toFF(self) -> bytes:#write the Driving_Ctrl signal to 0xFF (default value)
+        
+        try:
+
+            data_toFF = bytes([0xff]*21) # 21 bytes of 0xFF
+            print(f"Processed input: {data_toFF}")
+
+            #Change Diagnostic Session to Extended DiagnosticSession
+            response = self.client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
+            response = self.client.unlock_security_access(1)#Set the security_access key=1
+            response = self.client.write_data_by_identifier(0x1001, data_toFF)#write the previously merged_bytes to DID(0x1001)
+
+
+            self.debug_print(f"The response sevice is {response.service_data}, data is {response.data.hex()}")
+
+            return data_toFF
+
+        except Exception as e:#Print an error message if an error occurs
+            print(f"Error processing: {e}")
+            return None
+    
