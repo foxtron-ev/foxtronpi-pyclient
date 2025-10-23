@@ -1,2 +1,8 @@
-foxtronpi_pyclient.egg-info
-build
+Pi/
+__pycache__/
+*.build/
+Pi/
+client_config.build/
+common.build/
+__pycache__/
+*.so
