@@ -179,5 +179,4 @@ class FoxPiWriteDID:
 
         except Exception as e:#Print an error message if an error occurs
             print(f"Error processing: {e}")
-            return None
-    
+            return None  

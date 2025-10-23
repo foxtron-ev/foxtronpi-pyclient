@@ -41,6 +41,3 @@ class FoxPiDTC:
             #print(f"Clear DTCs failed: {e}")
             self.doip_client._ecu_logical_address = DoIP_LOGICAL_ADDRESS # change back to the physical address
             return e
-
-
-    

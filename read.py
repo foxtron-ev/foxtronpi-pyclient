@@ -56,5 +56,3 @@ with Client(uds_connection, request_timeout=4, config=get_uds_client()) as clien
                 print(f"{i}: {j}")
         else:
             print("\033[91mInvalid input. Please enter a number between 1 to 18.\033[0m")
-        
-            
